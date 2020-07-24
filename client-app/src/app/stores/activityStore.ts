@@ -13,9 +13,20 @@ class ActivityStore {
   @observable target = "";
 
   @computed get activitiesByDate() {
-    return Array.from(this.activityRegistry.values()).sort(
+    return this.groupActivitiesByDate(
+      Array.from(this.activityRegistry.values())
+    );
+  }
+
+  groupActivitiesByDate(activities: IActivity[]) {
+    const sortedActivities = activities.sort(
       (a, b) => Date.parse(a.date) - Date.parse(b.date)
     );
+    return Object.entries(sortedActivities.reduce((activities, activity) => {
+      const date = activity.date.split('T')[0];
+      activities[date] = activities[date] ? [...activities[date], activity] : [activity];
+      return activities;
+    }, {} as {[key: string]: IActivity[]}));
   }
 
   @action loadActivities = async () => {
@@ -48,26 +59,26 @@ class ActivityStore {
       try {
         activity = await agent.Activities.details(id);
 
-        runInAction('getting activity', () => {
+        runInAction("getting activity", () => {
           this.activity = activity;
           this.loadingInital = false;
-        })
+        });
       } catch (error) {
-        runInAction('get activity error', () => {
+        runInAction("get activity error", () => {
           this.loadingInital = false;
-        })
+        });
         console.log(error);
       }
-    }      
-  }
+    }
+  };
 
   getActivity = (id: string) => {
     return this.activityRegistry.get(id);
-  }
+  };
 
   @action clearActivity = () => {
     this.activity = null;
-  }
+  };
 
   @action createActivity = async (activity: IActivity) => {
     this.submitting = true;
